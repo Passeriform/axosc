@@ -18,18 +18,6 @@ local Config = {
     animation_speed = 12,
     hide_timeout    = 3.5,
 
-    icon_font       = "Phosphor",
-    icon_font_size  = 24,
-    icons = {
-        play       = "\xEE\x8F\x90",
-        pause      = "\xEE\x8E\x9E",
-        next       = "\xEE\x96\xA6",
-        volume     = "\xEE\x91\x8A",
-        mute       = "\xEE\x91\x9B",
-        subtitles  = "\xEE\x86\xA8",
-        play_speed = "\xEE\x92\x92",
-    },
-
     colors = {
         background = 0x000000,
         icon       = 0xFFFFFF,
@@ -42,23 +30,22 @@ local Config = {
         },
     },
 
-    progress = {
-        animate_idle = true,
+    icon = {
+        font = "Phosphor",
+        size = 24,
 
-        wave = {
-            speed     = 0.045,
-            amplitude = 4.5,
-            frequency = 0.15,
-            thickness = 5,
-        },
-
-        scrubber = {
-            margin    = 8,
-            size      = 20,
-            thickness = 5,
+        collection = {
+            play       = 0xE3D0,
+            pause      = 0xE39E,
+            next       = 0xE5A6,
+            -- TODO: Add volume level icons
+            volume     = 0xE44A,
+            mute       = 0xE45A,
+            subtitles  = 0xE1A8,
+            play_speed = 0xE492,
         },
     },
-    
+
     notch = {
         width  = 600,
         height = 64,
@@ -77,6 +64,21 @@ local Config = {
         height  = 160,
         padding = 20,
         radius  = 12,
+    },
+
+    progress = {
+        wave = {
+            speed     = 0.045,
+            amplitude = 4.5,
+            frequency = 0.15,
+            thickness = 5,
+        },
+
+        scrubber = {
+            margin    = 8,
+            size      = 20,
+            thickness = 5,
+        },
     },
 
     taste = {
@@ -133,7 +135,7 @@ function Interpolations.update()
     Interpolations.seekbar_wave.phase = Interpolations.seekbar_wave.phase + Config.progress.wave.speed
     Interpolations.seekbar_wave.mix = Utils.lerp(
         Interpolations.seekbar_wave.mix,
-        ((not State.paused) or (State.paused and Config.taste.preserve_wave_on_seek and Input.active_drag == "seekbar" and Input.was_playing)) and 1.0 or (Config.taste.animate_collapsed_wave and 0.1 or 0.0)
+        ((not State.paused) or (State.paused and Config.taste.preserve_wave_on_seek and Input.active_drag == "seekbar" and Input.was_playing)) and 1.0 or (Config.taste.animate_collapsed_wave and 0.1 or 0.0),
         Config.animation_speed * Config.frame_rate
     )
 
@@ -241,8 +243,8 @@ end
 local overlay = mp.create_osd_overlay("ass-events")
 
 Draw.settings = {
-    font      = Config.icon_font,
-    font_size = Config.icon_font_size,
+    font      = Config.icon.font,
+    font_size = Config.icon.size,
 }
 
 Draw.Wave.settings = {
@@ -272,15 +274,15 @@ function render()
     local ass = assdraw.ass_new()
 
     Draw.notch(ass, Layouts.notch, Config.notch.radius, Config.colors.background)
-    Draw.icon(ass, Layouts.play, State.paused and Config.icons.play or Config.icons.pause, Config.colors.icon)
+    Draw.icon(ass, Layouts.play, State.paused and Config.icon.collection.play or Config.icon.collection.pause, Config.colors.icon)
     Draw.Progress.horizontal(ass, Layouts.seekbar, State.seek, Interpolations.seekbar_wave.mix, Interpolations.seekbar_wave.phase, Config.colors.progress.filled)
-    Draw.icon(ass, Layouts.next, Config.icons.next, Config.colors.icon)
+    Draw.icon(ass, Layouts.next, Config.icon.collection.next, Config.colors.icon)
     Draw.panel(ass, Layouts.control_panel, Config.control_panel.radius, Config.colors.background)
-    Draw.icon(ass, Layouts.volume, State.muted and Config.icons.mute or Config.icons.volume, Config.colors.icon)
+    Draw.icon(ass, Layouts.volume, State.muted and Config.icon.collection.mute or Config.icon.collection.volume, Config.colors.icon)
     Draw.panel(ass, Layouts.volume_panel, Config.volume_panel.radius, Config.colors.background)
     Draw.Progress.vertical(ass, Layouts.volume_slider, State.volume, Interpolations.volume_wave.mix, Interpolations.volume_wave.phase, State.muted and Config.colors.progress.disabled or Config.colors.progress.filled)
-    Draw.icon(ass, Layouts.subtitles, Config.icons.subtitles, Config.colors.icon)
-    Draw.icon(ass, Layouts.play_speed, Config.icons.play_speed, Config.colors.icon)
+    Draw.icon(ass, Layouts.subtitles, Config.icon.collection.subtitles, Config.colors.icon)
+    Draw.icon(ass, Layouts.play_speed, Config.icon.collection.play_speed, Config.colors.icon)
 
     if Config.debug then
         Draw.debug(ass, {

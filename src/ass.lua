@@ -1,5 +1,35 @@
 local Ass = {}
 
+function Ass.__createRasterize(ass)
+    return function(val)
+        return math.floor(val * (2 ^ (ass.scale - 1)) + 0.5)
+    end
+end
+
+function Ass.__unicode(codepoint)
+    if codepoint < 0x80 then
+        return string.char(codepoint)
+    elseif codepoint < 0x800 then
+        return string.char(
+            0xC0 + math.floor(codepoint / 0x40),
+            0x80 + (codepoint % 0x40)
+        )
+    elseif codepoint < 0x10000 then
+        return string.char(
+            0xE0 + math.floor(codepoint / 0x1000),
+            0x80 + math.floor((codepoint / 0x40) % 0x40),
+            0x80 + (codepoint % 0x40)
+        )
+    else
+        return string.char(
+            0xF0 + math.floor(codepoint / 0x40000),
+            0x80 + math.floor((codepoint / 0x1000) % 0x40),
+            0x80 + math.floor((codepoint / 0x40) % 0x40),
+            0x80 + (codepoint % 0x40)
+        )
+    end
+end
+
 function Ass.scale(scale)
     return string.format("{\\p%s}", scale or 0)
 end

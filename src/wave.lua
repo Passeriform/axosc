@@ -13,7 +13,7 @@ local Wave = {
 }
 
 function Wave.horizontal(ass, layout, mix, phase, color)
-    local rasterize = Draw.__createRasterize(ass)
+    local rasterize = Ass.__createRasterize(ass)
     local radius = Wave.settings.thickness / 2
     local control_distance = radius * Draw.KAPPA
     local amplitude = Wave.settings.amplitude * mix
@@ -74,7 +74,7 @@ function Wave.horizontal(ass, layout, mix, phase, color)
 end
 
 function Wave.vertical(ass, layout, mix, phase, color)
-    local rasterize = Draw.__createRasterize(ass)    
+    local rasterize = Ass.__createRasterize(ass)    
     local radius = Wave.settings.thickness / 2
     local control_distance = radius * Draw.KAPPA
     local amplitude = Wave.settings.amplitude * mix

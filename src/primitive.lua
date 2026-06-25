@@ -10,14 +10,8 @@ local Draw = {
     }
 }
 
-function Draw.__createRasterize(ass)
-    return function(val)
-        return math.floor(val * (2 ^ (ass.scale - 1)) + 0.5)
-    end
-end
-
 function Draw.notch(ass, layout, radius, color)
-    local rasterize = Draw.__createRasterize(ass)
+    local rasterize = Ass.__createRasterize(ass)
     local control_distance = radius * Draw.KAPPA
     local _, layout_block_end = layout:corner("br")
 
@@ -85,7 +79,7 @@ end
 -- TODO: Add checks for zero-radius
 -- TODO: Convert to use layout bounds as diameter
 function Draw.circle(ass, position, radius, color)
-    local rasterize = Draw.__createRasterize(ass)
+    local rasterize = Ass.__createRasterize(ass)
     local control_distance = radius * Draw.KAPPA
 
     ass:new_event()
@@ -146,11 +140,11 @@ function Draw.cylinder(ass, layout, color)
     ass:draw_stop()
 end
 
-function Draw.icon(ass, layout, text, color)
+function Draw.icon(ass, layout, codepoint, color)
     ass:new_event()
     ass:pos(layout:center())
     ass:an(5)
-    ass:append(Ass.text(text, Draw.settings.font, Draw.settings.font_size, color))
+    ass:append(Ass.text(Ass.__unicode(codepoint), Draw.settings.font, Draw.settings.font_size, color))
 end
 
 function Draw.debug(ass, layouts)
