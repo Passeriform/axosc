@@ -33,6 +33,14 @@
       default = self.packages.${system}.axosc;
     });
 
+    overlays.default = final: prev: {
+      mpvScripts =
+        (prev.mpvScripts or {})
+        // {
+          axosc = self.packages.${final.system}.default;
+        };
+    };
+
     devShells = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
     in {
