@@ -24,7 +24,7 @@
         scriptPath = "./src";
 
         meta = with nixpkgs.lib; {
-          description = self.description;
+          description = "Ambxst-themed custom OSC for mpv";
           homepage = "https://github.com/Passeriform/axosc";
           license = licenses.mit;
         };
