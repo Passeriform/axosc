@@ -80,7 +80,9 @@ local Config = {
     },
 
     taste = {
-        zero_progress_hinting = true,
+        animate_collapsed_wave = true,
+        preserve_wave_on_seek  = true,
+        zero_progress_hinting  = true,
     },
 }
 
@@ -131,15 +133,14 @@ function Interpolations.update()
     Interpolations.seekbar_wave.phase = Interpolations.seekbar_wave.phase + Config.progress.wave.speed
     Interpolations.seekbar_wave.mix = Utils.lerp(
         Interpolations.seekbar_wave.mix,
-        -- TODO: Add taste flag to preserve wave mix if video is temporarily paused while seeking
-        State.paused and (Config.progress.animate_idle and 0.1 or 0.0) or 1.0,
+        ((not State.paused) or (State.paused and Config.taste.preserve_wave_on_seek and Input.active_drag == "seekbar" and Input.was_playing)) and 1.0 or (Config.taste.animate_collapsed_wave and 0.1 or 0.0)
         Config.animation_speed * Config.frame_rate
     )
 
     Interpolations.volume_wave.phase = Interpolations.volume_wave.phase + Config.progress.wave.speed
     Interpolations.volume_wave.mix = Utils.lerp(
         Interpolations.volume_wave.mix,
-        State.muted and (Config.progress.animate_idle and 0.1 or 0.0) or 1.0,
+        State.muted and (Config.taste.animate_collapsed_wave and 0.1 or 0.0) or 1.0,
         Config.animation_speed * Config.frame_rate
     )
 end
