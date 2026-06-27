@@ -17,6 +17,7 @@ local Config = {
     frame_rate      = 0.016,
     animation_speed = 12,
     hide_timeout    = 3.5,
+    seek_timeout    = 1.0,
 
     colors = {
         background = 0x000000,
@@ -105,21 +106,16 @@ local State = {
 -- Input
 --------------------------------------------------------------------------------
 local Input = {
-    idle_tracker = 0,
-    active_drag  = nil,
-    was_playing  = false,
+    idle_tracker          = 0,
+    seek_tracker          = 0,
+    active_drag           = nil,
+    was_playing           = false,
 }
 
 function Input.wake()
     Input.idle_tracker = 0
     State.show_osc = true
     mp.set_property("cursor-autohide", "no")
-end
-
-function Input.seekTo(position, layout)
-    -- TODO: Add throttling window with both edges, add configuration option for seek throttle
-    local requested = (position - layout.x) * 100 / layout.w
-    mp.commandv("seek", Utils.clamp(requested, 0, 100), "absolute-percent", "exact")
 end
 
 function Input.setVolume(position, layout)
@@ -129,13 +125,21 @@ function Input.setVolume(position, layout)
 end
 
 function Input.update()
-    if Input.active_drag ~= nil then return end
+    if Input.active_drag == "seekbar" then
+        Input.seek_tracker = Input.seek_tracker + Config.frame_rate
 
-    Input.idle_tracker = Input.idle_tracker + Config.frame_rate
+        if Input.seek_tracker >= Config.seek_timeout then
+            mp.commandv("seek", State.seek, "absolute-percent", "exact")
+        end
+    end
 
-    if Input.idle_tracker >= Config.hide_timeout then
-        State.show_osc = false
-        mp.set_property("cursor-autohide", "always")
+    if Input.active_drag == nil then
+        Input.idle_tracker = Input.idle_tracker + Config.frame_rate
+
+        if Input.idle_tracker >= Config.hide_timeout then
+            State.show_osc = false
+            mp.set_property("cursor-autohide", "always")
+        end
     end
 end
 
@@ -330,14 +334,17 @@ mp.add_forced_key_binding("MBTN_LEFT", "mouse_button", function(table)
             Input.active_drag = "seekbar"
             Input.was_playing = not mp.get_property_bool("pause")
             mp.set_property_bool("pause", true)
-            Input.seekTo(x, Layouts.seekbar)
+            State.seek = Utils.clamp((x - Layouts.seekbar.x) * 100 / Layouts.seekbar.w, 0, 100)
         elseif State.show_osc and State.show_volume_panel and Layouts.volume_slider:contains(x, y) then
             Input.active_drag = "volume_slider"
             Input.setVolume(y, Layouts.volume_slider)
         end
     elseif table.event == "up" then
-        if Input.active_drag == "seekbar" and Input.was_playing then
-            mp.set_property_bool("pause", false)
+        if Input.active_drag == "seekbar" then
+            mp.commandv("seek", State.seek, "absolute-percent", "exact")
+            if Input.was_playing then
+                mp.set_property_bool("pause", false)
+            end
         end
         Input.active_drag = nil
     end
@@ -355,7 +362,7 @@ mp.observe_property("mouse-pos", "native", function(_, position)
     end
 
     if Input.active_drag == "seekbar" then
-        Input.seekTo(position.x, Layouts.seekbar)
+        State.seek = Utils.clamp((position.x - Layouts.seekbar.x) * 100 / Layouts.seekbar.w, 0, 100)
     elseif Input.active_drag == "volume_slider" then
         Input.setVolume(position.y, Layouts.volume_slider)
     end
@@ -377,7 +384,9 @@ mp.observe_property("volume", "number", function(_, volume)
 end)
 
 mp.observe_property("percent-pos", "number", function(_, seek)
-    State.seek = seek or 0
+    if Input.active_drag ~= "seekbar" then
+        State.seek = seek or 0
+    end
 end)
 
 mp.register_event("seek", Input.wake)
