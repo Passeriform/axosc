@@ -16,6 +16,7 @@ Add the following lines to your `mpv.conf` file (typically located at `~/.config
 # Required settings for axosc
 osc=no
 window-dragging=no
+osd-bar=no
 ```
 
 ---
@@ -66,6 +67,7 @@ programs.mpv = {
   config = {
     osc = "no";
     window-dragging = "no";
+    osd-bar = "no";
   };
 };
 ```
@@ -100,6 +102,7 @@ To install `axosc` on other Linux distributions, clone the repository and link o
   ```bash
   osc=no
   window-dragging=no
+  osd-bar=no
   ```
 
 ---
