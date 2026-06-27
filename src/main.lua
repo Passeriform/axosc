@@ -102,6 +102,44 @@ local State = {
 }
 
 --------------------------------------------------------------------------------
+-- Input
+--------------------------------------------------------------------------------
+local Input = {
+    idle_tracker = 0,
+    active_drag  = nil,
+    was_playing  = false,
+}
+
+function Input.wake()
+    Input.idle_tracker = 0
+    State.show_osc = true
+    mp.set_property("cursor-autohide", "no")
+end
+
+function Input.seekTo(position, layout)
+    -- TODO: Add throttling window with both edges, add configuration option for seek throttle
+    local requested = (position - layout.x) * 100 / layout.w
+    mp.commandv("seek", Utils.clamp(requested, 0, 100), "absolute-percent", "exact")
+end
+
+function Input.setVolume(position, layout)
+    local _, volume_slider_block_end = layout:corner("bl")
+    local requested = (volume_slider_block_end - position) * 100 / layout.h
+    mp.commandv("set", "volume", Utils.clamp(requested, 0, 100))
+end
+
+function Input.update()
+    if Input.active_drag ~= nil then return end
+
+    Input.idle_tracker = Input.idle_tracker + Config.frame_rate
+
+    if Input.idle_tracker >= Config.hide_timeout then
+        State.show_osc = false
+        mp.set_property("cursor-autohide", "always")
+    end
+end
+
+--------------------------------------------------------------------------------
 -- Interpolation
 --------------------------------------------------------------------------------
 local Interpolations = {
@@ -200,44 +238,6 @@ function Layouts.update(window_width, window_height)
 end
 
 --------------------------------------------------------------------------------
--- Input
---------------------------------------------------------------------------------
-local Input = {
-    idle_tracker = 0,
-    active_drag  = nil,
-    was_playing  = false,
-}
-
-function Input.wake()
-    Input.idle_tracker = 0
-    State.show_osc = true
-    mp.set_property("cursor-autohide", "no")
-end
-
-function Input.seekTo(position)
-    -- TODO: Add throttling window with both edges, add configuration option for seek throttle
-    local requested = (position - Layouts.seekbar.x) * 100 / Layouts.seekbar.w
-    mp.commandv("seek", Utils.clamp(requested, 0, 100), "absolute-percent", "exact")
-end
-
-function Input.setVolume(position)
-    local _, volume_slider_block_end = Layouts.volume_slider:corner("bl")
-    local requested = (volume_slider_block_end - position) * 100 / Layouts.volume_slider.h
-    mp.commandv("set", "volume", Utils.clamp(requested, 0, 100))
-end
-
-function Input.update()
-    if Input.active_drag ~= nil then return end
-
-    Input.idle_tracker = Input.idle_tracker + Config.frame_rate
-
-    if Input.idle_tracker >= Config.hide_timeout then
-        State.show_osc = false
-        mp.set_property("cursor-autohide", "always")
-    end
-end
-
---------------------------------------------------------------------------------
 -- Render
 --------------------------------------------------------------------------------
 local overlay = mp.create_osd_overlay("ass-events")
@@ -330,10 +330,10 @@ mp.add_forced_key_binding("MBTN_LEFT", "mouse_button", function(table)
             Input.active_drag = "seekbar"
             Input.was_playing = not mp.get_property_bool("pause")
             mp.set_property_bool("pause", true)
-            Input.seekTo(x)
+            Input.seekTo(x, Layouts.seekbar)
         elseif State.show_osc and State.show_volume_panel and Layouts.volume_slider:contains(x, y) then
             Input.active_drag = "volume_slider"
-            Input.setVolume(y)
+            Input.setVolume(y, Layouts.volume_slider)
         end
     elseif table.event == "up" then
         if Input.active_drag == "seekbar" and Input.was_playing then
@@ -355,9 +355,9 @@ mp.observe_property("mouse-pos", "native", function(_, position)
     end
 
     if Input.active_drag == "seekbar" then
-        Input.seekTo(position.x)
+        Input.seekTo(position.x, Layouts.seekbar)
     elseif Input.active_drag == "volume_slider" then
-        Input.setVolume(position.y)
+        Input.setVolume(position.y, Layouts.volume_slider)
     end
 end)
 
